@@ -1,7 +1,13 @@
 pipeline {
     agent {
         dockerfile {
-            args '--group-add=46 --device-cgroup-rule="c 189:* rmw" -v /dev/bus/usb:/dev/bus/usb'
+            args '''
+                --group-add=46
+                --device-cgroup-rule="c 189:* rmw"
+                -v /dev/bus/usb:/dev/bus/usb
+                -v /tmp/req_pipe:/tmp/req_pipe
+                -v /tmp/res_pipe:/tmp/res_pipe
+                '''
         }
     }
     stages {
@@ -17,11 +23,13 @@ pipeline {
         }
         stage('Test') {
             steps {
-                sh './ci-scripts/configure-hubs.sh --off'
+                sh 'hubs all off'
                 retry(3) {
+                    sh 'hubs greatfet reset'
                     sh './ci-scripts/test-host.sh'
                 }
                 retry(3) {
+                    sh 'hubs greatfet reset'
                     sh './ci-scripts/test-firmware-program.sh'
                 }
                 sh './ci-scripts/test-firmware-flash.sh'
